@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-PYTHON := /opt/homebrew/bin/python3 # TODO: add your python path
+PYTHON := /opt/homebrew/bin/python3.11
 VENV_DIR := .venv
 ACTIVATE_VENV := source $(VENV_DIR)/bin/activate
 
@@ -16,7 +16,7 @@ test:
 	pytest tests
 
 run:
-	docker-compose -f src/compose.yml up 
+	docker-compose -f src/compose.yml up --build
 
 clean:
 	rm -rf $(VENV_DIR)
