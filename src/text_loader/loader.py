@@ -1,9 +1,13 @@
 import pandas as pd
 import string
 import re
+import mlflow.xgboost
+
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
-import xgboost as xgb
+
+MODEL_PATH = 'file:///Users/henriquelouzada/repos/MLEng-politicalparties-python-exercise/mlruns/595336408377215950/models/m-359665d13f1345aa8d0181435c0fc9f6/artifacts'
+# TODO: change to relative path
 
 class DataLoader:
     def __init__(self, filepath="data/Tweets.csv"):
@@ -32,7 +36,7 @@ class DataLoader:
 
     def vectorize_text(self, tweets: list[str]):
         self.vectorizer = TfidfVectorizer(max_features=2500, min_df=1, max_df=0.8)
-        return self.vectorizer.fit_transform(tweets).toarray()
+        return self.vectorizer.fit_transform(tweets).toarray() # type: ignore
 
     def label_encoder(self, parties):
         self.encoder = LabelEncoder()
@@ -40,25 +44,22 @@ class DataLoader:
 
     def preprocess_tweets(self):
         self.data.Tweet = self.data.Tweet.apply(self.clean_text)
-        return self.vectorize_text(self.data.Tweet.values)
+        return self.vectorize_text(self.data.Tweet.values) # type: ignore
 
     def preprocess_parties(self):
         self.data.Party = self.data.Party.apply(self.clean_text)
         return self.label_encoder(self.data.Party.values)
     
-    def train_model(self):
-        X = self.preprocess_tweets()
-        y = self.preprocess_parties()
-        model = xgb.XGBClassifier(use_label_encoder=False, eval_metric='mlogloss')
-        model.fit(X, y)
-        return model
-    
-    def predict(self, model, new_tweets: list[str]):
+    def predict(self, new_tweets: list[str]):
         if self.vectorizer is None or self.encoder is None:
             raise ValueError("Model and encoder must be trained before prediction.")
+
+        # TODO: save/load vectorizer and encoder from mlflow
         
+        model = mlflow.xgboost.load_model(MODEL_PATH)
+
         cleaned_tweets = [self.clean_text(tweet) for tweet in new_tweets]
-        vectorized_tweets = self.vectorizer.transform(cleaned_tweets).toarray()
+        vectorized_tweets = self.vectorizer.transform(cleaned_tweets).toarray() # type: ignore
         predictions = model.predict(vectorized_tweets)
         self.model = model
         return self.encoder.inverse_transform(predictions)
