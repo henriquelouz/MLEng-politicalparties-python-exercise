@@ -13,5 +13,6 @@ services:
       dockerfile: ./model-inference-endpoint/Dockerfile
     volumes:
       - ../data:/usr/src/app/data
+      - ../mlruns:/usr/mlruns
     ports:
       - "8000:8000"

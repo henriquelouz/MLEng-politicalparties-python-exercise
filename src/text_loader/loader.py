@@ -1,13 +1,16 @@
-import pandas as pd
 import string
 import re
+import os
 import mlflow.xgboost
+import pandas as pd
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import LabelEncoder
 
-MODEL_PATH = 'file:///Users/henriquelouzada/repos/MLEng-politicalparties-python-exercise/mlruns/595336408377215950/models/m-359665d13f1345aa8d0181435c0fc9f6/artifacts'
-# TODO: change to relative path
+ML_RUNS_DIR = "/usr/mlruns"
+MODEL_PATH = os.path.join(ML_RUNS_DIR, "595336408377215950/models/m-ce7cb0cea5ab416e926ed6587a523050/artifacts")
+ENCODER_PATH = os.path.join(ML_RUNS_DIR, "595336408377215950/models/m-484f58f86126427e9ee592b7017686be/artifacts")
+VECTORIZER_PATH = os.path.join(ML_RUNS_DIR, "595336408377215950/models/m-03b98d12ac644c68804441ce9cd769c5/artifacts")
 
 class DataLoader:
     def __init__(self, filepath="data/Tweets.csv"):
@@ -51,16 +54,13 @@ class DataLoader:
         return self.label_encoder(self.data.Party.values)
     
     def predict(self, new_tweets: list[str]):
-        if self.vectorizer is None or self.encoder is None:
-            raise ValueError("Model and encoder must be trained before prediction.")
-
-        # TODO: save/load vectorizer and encoder from mlflow
-        
-        model = mlflow.xgboost.load_model(MODEL_PATH)
+        self.vectorizer = mlflow.sklearn.load_model(VECTORIZER_PATH)
+        self.encoder = mlflow.sklearn.load_model(ENCODER_PATH)
+        self.model = mlflow.xgboost.load_model(MODEL_PATH)
 
         cleaned_tweets = [self.clean_text(tweet) for tweet in new_tweets]
         vectorized_tweets = self.vectorizer.transform(cleaned_tweets).toarray() # type: ignore
-        predictions = model.predict(vectorized_tweets)
-        self.model = model
-        return self.encoder.inverse_transform(predictions)
+        predictions = self.model.predict(vectorized_tweets)
+        
+        return self.encoder.inverse_transform(predictions) # type: ignore
 

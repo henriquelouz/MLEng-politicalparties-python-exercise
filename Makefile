@@ -26,3 +26,7 @@ clean:
 	rm -rf data/models/*
 
 .PHONY: all venv clean test install run
+
+train:
+	$(ACTIVATE_VENV); python src/model/train.py
+	

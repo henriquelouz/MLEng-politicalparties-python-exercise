@@ -18,6 +18,7 @@ def train(df: pd.DataFrame):
     with mlflow.start_run():
         data_loader = DataLoader()
 
+        # Clean and preprocess the data
         df.Tweet = df.Tweet.apply(data_loader.clean_text)
         X = data_loader.vectorize_text(df.Tweet.values) # type: ignore
 
@@ -26,6 +27,11 @@ def train(df: pd.DataFrame):
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
+        # Log the vectorizer and encoder
+        mlflow.sklearn.log_model(data_loader.vectorizer, "vectorizer")
+        mlflow.sklearn.log_model(data_loader.encoder, "encoder")
+
+        # Define model parameters
         params = {
             "objective": "binary:logistic",   # binary classification
             "eval_metric": "logloss",         # good for probabilistic classification
@@ -48,12 +54,15 @@ def train(df: pd.DataFrame):
 
         mlflow.log_params(params)
 
+        # Train the model
         model = xgb.XGBClassifier(**params)
         model.fit(X_train, y_train)
 
+        # Log the model
         signature = mlflow.models.infer_signature(X_train, model.predict(X_train))
         mlflow.xgboost.log_model(model, "model", signature=signature)
 
+        # Evaluate the model
         y_pred = model.predict(X_test)
 
         mlflow.log_metric("accuracy", float(accuracy_score(y_test, y_pred)))
